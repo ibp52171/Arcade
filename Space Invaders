@@ -17,11 +17,11 @@ import javafx.scene.text.Text;
 /*
  * An application that creates and runs a Space Invaders game
  *
- * @author Ingrid Pedersen and Connor McRae
+ * @author Ingrid Pedersen
  */
 
-public class Main extends Application {
-    //public Rectangle testBu///llet=new Rectangle();
+public class SpaceInvaders extends Application {
+    public Rectangle testBullet=new Rectangle();
     public boolean ingridDowns = false;
     public boolean left = false;
     public boolean hit;
