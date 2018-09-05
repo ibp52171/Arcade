@@ -28,7 +28,7 @@ import javafx.application.Platform;
 import javafx.scene.input.*;
 
 
-public class Main extends Application {
+public class Minesweeper extends Application {
 
     private Piece[][] pieceBoard =new Piece[20][20];
     private Random rng = new Random();
