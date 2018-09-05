@@ -1,0 +1,263 @@
+
+
+import javafx.application.Application;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.control.Button;
+import javafx.scene.Scene;
+import javafx.scene.input.MouseButton;
+import javafx.stage.Stage;
+import javafx.scene.shape.Rectangle;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.StackPane;
+import javafx.scene.shape.Shape;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
+import javafx.scene.control.Label;
+import javafx.scene.layout.FlowPane;
+import java.util.Random;
+import javafx.scene.Group;
+import javafx.stage.Stage;
+import javafx.application.Application;
+import javafx.scene.Scene;
+import javafx.scene.paint.Color;
+import javafx.scene.paint.Paint;
+import javafx.scene.text.Text;
+import javafx.stage.Modality;
+import javafx.application.Platform;
+import javafx.scene.input.*;
+
+
+public class Main extends Application {
+
+    private Piece[][] pieceBoard =new Piece[20][20];
+    private Random rng = new Random();
+    private int [][] mineBoard = new int[20][20];
+    private VBox mainPane;
+    private GridPane grid;
+    private Stage stage;
+
+    public int goodFlag=0;
+    int[] spots = new int[] {
+            -1, 0,
+            -1, -1,
+            1, -1,
+            1, 0,
+            0, -1,
+            1, 1,
+            -1, 1,
+            0, 1
+    };
+
+    @Override
+    public void start(Stage stage) throws Exception {
+        grid = new GridPane();
+        mainPane = new VBox();
+
+        for(int i = 0; i < pieceBoard.length; i++) {
+            for (int q = 0; q < pieceBoard.length; q++) {
+                Piece rec = new Piece(mineBoard[i][q], 1, rng.nextInt(100) <=5);
+                rec.x=i;
+                rec.y= q;
+                pieceBoard[i][q] = rec;
+                grid.setRowIndex(rec, i);
+                grid.setColumnIndex(rec, q);
+                grid.getChildren().add(rec);
+            }
+        }
+        mainPane.getChildren().add(grid);
+        Scene scene = new Scene(mainPane);
+        stage.setTitle("Minesweeper");
+        stage.setScene(scene);
+        stage.sizeToScene();
+        stage.show();
+
+    }//start
+
+    public class Piece extends StackPane {
+
+        public int neighborBombs;
+        public boolean hasBomb;
+        public int bombValue;
+        public Text text = new Text();
+        public Rectangle rec = new Rectangle(20, 20);
+        public int x;
+        public int y;
+        public boolean revealed;
+        public boolean flagged=false;
+
+        public Piece(int bombValue, int neighborBombs, boolean hasBomb) {
+            this.bombValue = bombValue;
+            this.hasBomb = hasBomb;
+            this.neighborBombs = 0;
+            revealed = false;
+            rec.setOnMouseClicked(e -> {
+                MouseButton button = e.getButton();
+                if(button == MouseButton.SECONDARY) {
+                    rec.setFill(Color.GREEN);
+                    this.flagged=true;
+                    flag(this.x,this.y);
+                }
+                else if(button == MouseButton.PRIMARY) {
+                if (this.flagged) {
+                        this.flagged = false;
+                        rec.setFill(Color.DARKGRAY);
+                        }
+                    else if (!this.flagged) reveal();
+                }
+                });
+            rec.setFill(Color.DARKGRAY);
+            rec.setStroke(Color.BLACK);
+            text.setVisible(false);
+            getChildren().addAll(rec, text);
+        }
+
+            public void reveal() {
+                if(hasBomb == true) {
+
+                    final Stage dialog = new Stage();
+                    Button exitButton = new Button("Click here to exit");
+                    exitButton.setOnAction(e -> System.exit(0));
+                    dialog.initModality(Modality.APPLICATION_MODAL);
+                    dialog.initOwner(stage);
+                    VBox dialogVbox = new VBox(20);
+                    dialogVbox.getChildren().addAll(new Text("rekt"),new Text("score " + Integer.toString(calculator())), exitButton);
+                    Scene dialogScene = new Scene(dialogVbox, 300, 200);
+                    dialog.setScene(dialogScene);
+                    dialog.show();
+                    rec.setFill(Color.RED);
+                    text.setVisible(false);
+
+                }
+                else if(flagged) {
+                    text.setText("");
+                    text.setVisible(false);
+                }
+                else {
+                    recursion(this.x,this.y);
+                    colorSquares();
+                    revealed = true;
+                }
+            }
+    }
+
+    public void recursion(int x, int y) {
+
+        if (x < 0 || x > 19 || y < 0 || y > 19) return;
+
+        if(countBombs(x,y) == 0 && pieceBoard[x][y].revealed == false && !pieceBoard[x][y].text.equals("X")) {
+            pieceBoard[x][y].revealed = true;
+            recursion(x+1, y);
+            recursion(x+1, y+1);
+            recursion(x+1, y-1);
+            recursion(x-1, y);
+            recursion(x-1, y+1);
+            recursion(x-1, y-1);
+            recursion(x, y+1);
+            recursion(x, y-1);
+        }
+        else return;
+
+    }
+    public void colorSquares() {
+
+        for(int i = 0; i < pieceBoard.length; i++) {
+            for(int i2 = 0; i2 < pieceBoard.length; i2++) {
+                if(pieceBoard[i][i2].flagged) pieceBoard[i][i2].rec.setFill(Color.GREEN);
+                if(pieceBoard[i][i2].revealed == true && pieceBoard[i][i2].flagged != true) {
+                    if(pieceBoard[i][i2].neighborBombs == 0){// && !pieceBoard[i][i2].text.equals("X")) {
+                        pieceBoard[i][i2].rec.setFill(Color.WHITE);
+                        pieceBoard[i][i2].text.setVisible(false);
+                    }
+                }
+            }
+        }
+    }
+    public void flag(int x, int y) {
+    if(pieceBoard[x][y].hasBomb==true){
+        goodFlag++;
+        }
+    if(goodFlag == numBombs()) {
+        final Stage dialog = new Stage();
+        Button exitButton = new Button("Click here to exit");
+        exitButton.setOnAction(e -> System.exit(0));
+        dialog.initModality(Modality.APPLICATION_MODAL);
+        dialog.initOwner(stage);
+        VBox dialogVbox = new VBox(20);
+        dialogVbox.getChildren().addAll(new Text("Congratulations!!"),new Text("score " + Integer.toString(calculator())), exitButton);
+        Scene dialogScene = new Scene(dialogVbox, 300, 200);
+        dialog.setScene(dialogScene);
+        dialog.show();
+    }
+    }
+
+    public int calculator(){
+        int score=0;
+        score=(400/(numBombs()))+goodFlag;
+        return score;
+    }
+
+            public int countBombs(int x,int y) {
+
+                        int newX = 0;
+                        int newY = 0;
+                        int count = 0;
+                        for (int i = 0; i <= 14; i += 2) {
+                            newX = 0;
+                            newX = spots[i] + x;
+                            newY = 0;
+                            newY = spots[i + 1] + y;
+                            if (newY < 0 || newY > 19 || newX < 0 || newX > 19) {
+                                continue;
+                                //System.out.println("Null Exception you retard");
+                                //continue;
+                            }
+                            // System.out.println("we made it this far");
+                            //     System.out.println("mineboard at newX newY"+ " " + newX +" " + newY+ " " + mineBoard[newX][newY]);
+                            if (pieceBoard[newX][newY].hasBomb == true) {
+                                count++;
+                            }
+                            // System.out.println("we made it even further");
+                        }
+                        if (count == 0) {
+                            newX = 0;
+                            newY = 0;
+                            for (int i = 0; i <= 14; i += 2) {
+                                newX = 0;
+                                newX = spots[i] + x;
+                                newY = 0;
+                                newY = spots[i + 1] + y;
+                                if (newY < 0 || newY > 19 || newX < 0 || newX > 19) {
+                                    //System.out.println("Null Exception you retard");
+                                    continue;
+                                }
+                                // System.out.println("we made it this far");
+                                // System.out.println("mineboard at newX newY"+ " " + newX +" " + newY+ " " + mineBoard[newX][newY]);
+                                pieceBoard[newX][newY].text.setVisible(true);
+                            }
+                        }
+                        if(!pieceBoard[x][y].flagged)
+                            pieceBoard[x][y].text.setText(Integer.toString(count));
+
+                        return count;
+
+    }
+
+    public int numBombs(){
+        int bombs=0;
+        for(int i=0;i<pieceBoard.length;i++){
+            for(int i2=0;i2<pieceBoard.length;i2++){
+                if(pieceBoard[i][i2].hasBomb==true){
+                    bombs++;
+                }
+            }
+        }
+     return bombs;
+    }
+
+        public static void main(String[] args) {
+
+        Application.launch(args);
+
+    }//main
+}
